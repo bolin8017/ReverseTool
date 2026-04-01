@@ -1,0 +1,41 @@
+name: New Extractor Proposal
+description: Propose a new feature extractor
+title: "[Extractor]: "
+labels: ["extractor", "enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What does this extractor extract?
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: How would a security researcher use this?
+    validations:
+      required: true
+  - type: dropdown
+    id: backends
+    attributes:
+      label: Required Backend(s)
+      multiple: true
+      options:
+        - Ghidra
+        - Radare2
+        - Either
+    validations:
+      required: true
+  - type: textarea
+    id: output-schema
+    attributes:
+      label: Expected Output Format
+      render: json
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to implement this extractor
+        - label: I can provide test samples

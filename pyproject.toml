@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reverse-tool"
+version = "1.0.0"
+description = "Binary analysis feature extraction framework"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+authors = [{name = "PolinLai"}]
+keywords = [
+    "reverse-engineering", "binary-analysis", "malware-analysis",
+    "ghidra", "radare2", "ida-pro", "feature-extraction",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Security",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Typing :: Typed",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "rich-click>=1.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/bolin8017/ReverseTool"
+Repository = "https://github.com/bolin8017/ReverseTool"
+"Bug Tracker" = "https://github.com/bolin8017/ReverseTool/issues"
+Changelog = "https://github.com/bolin8017/ReverseTool/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+ghidra = ["pyghidra>=3.0"]
+radare2 = ["r2pipe>=1.9"]
+dev = [
+    "ruff>=0.11",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-timeout>=2.3",
+    "pre-commit",
+]
+
+[project.scripts]
+reverse-tool = "reverse_tool.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+reverse_tool = ["py.typed"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+# Ghidra postScripts run inside Jython inside Ghidra's headless analyzer.
+# They use Ghidra's built-in globals (getScriptArgs, currentProgram, …)
+# which are injected at runtime and are not importable by ruff.
+exclude = [
+    "src/reverse_tool/extractors/*/\\_scripts/*.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+# UP046: Generic[T] subclass style — keep TypeVar pattern for mypy compatibility
+ignore = ["UP046"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "src/reverse_tool/extractors/.+/_scripts/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: No external tool dependencies",
+    "integration: Requires a real backend",
+    "ghidra: Requires Ghidra backend",
+    "radare2: Requires Radare2 backend",
+    "idapro: Requires IDA Pro backend",
+]
+addopts = "-m unit --strict-markers --tb=short --timeout=30"
+
+[tool.coverage.run]
+source = ["reverse_tool"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+]
+omit = [
+    "src/reverse_tool/extractors/opcode/_ghidra.py",
+    "src/reverse_tool/extractors/opcode/_radare2.py",
+    "src/reverse_tool/extractors/function_call/_ghidra.py",
+    "src/reverse_tool/extractors/function_call/_radare2.py",
+    "src/reverse_tool/backends/radare2.py",
+    "src/reverse_tool/extractors/opcode/_idapro.py",
+    "src/reverse_tool/extractors/function_call/_idapro.py",
+    "src/reverse_tool/backends/idapro.py",
+    "src/reverse_tool/extractors/_ghidra_runner.py",
+    "src/reverse_tool/extractors/_idapro_runner.py",
+    "src/reverse_tool/__main__.py",
+]

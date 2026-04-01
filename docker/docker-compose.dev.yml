@@ -1,0 +1,12 @@
+# Development convenience — mount local samples and output
+# Usage: docker compose -f docker/docker-compose.dev.yml run reverse-tool opcode -b radare2 -d /data
+services:
+  reverse-tool:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: full
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ../samples:/data:ro
+      - ../output:/output

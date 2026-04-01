@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# ============================================================
+# reverse-tool-docker — Docker wrapper for ReverseTool
+#
+# Makes Docker usage feel identical to native:
+#   reverse-tool-docker opcode -b radare2 -d /path/to/bins -o /path/to/output
+#
+# Automatically handles:
+#   - Volume mounting (input as read-only, output as read-write)
+#   - User ID mapping (no permission issues)
+#   - Path translation (host paths → container paths)
+#
+# Environment variables:
+#   REVERSE_TOOL_IMAGE   Docker image (default: reverse-tool)
+#   REVERSE_TOOL_BACKEND Default backend if -b not specified
+# ============================================================
+
+set -euo pipefail
+
+IMAGE="${REVERSE_TOOL_IMAGE:-reverse-tool}"
+
+# Save original args
+ORIG_ARGS=("$@")
+
+# Extract -d and -o paths
+INPUT_DIR=""
+OUTPUT_DIR=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--directory)
+            [[ $# -ge 2 ]] || { echo "Error: $1 requires a path argument" >&2; exit 2; }
+            INPUT_DIR="$(realpath "$2")"
+            shift 2
+            ;;
+        -o|--output)
+            [[ $# -ge 2 ]] || { echo "Error: $1 requires a path argument" >&2; exit 2; }
+            OUTPUT_DIR="$(realpath "$2")"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# Build docker run command
+DOCKER_ARGS=(docker run --rm --user "$(id -u):$(id -g)")
+
+# Rebuild CLI args with container paths
+CLI_ARGS=()
+set -- "${ORIG_ARGS[@]}"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--directory)
+            DOCKER_ARGS+=(-v "${INPUT_DIR}:/data:ro")
+            CLI_ARGS+=("$1" "/data")
+            shift 2
+            ;;
+        -o|--output)
+            mkdir -p "$OUTPUT_DIR"
+            DOCKER_ARGS+=(-v "${OUTPUT_DIR}:/output")
+            CLI_ARGS+=("$1" "/output")
+            shift 2
+            ;;
+        *)
+            CLI_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+exec "${DOCKER_ARGS[@]}" "$IMAGE" "${CLI_ARGS[@]}"

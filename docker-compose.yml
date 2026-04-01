@@ -1,0 +1,47 @@
+# ReverseTool Docker Compose
+#
+# Usage:
+#   INPUT_DIR=/path/to/binaries OUTPUT_DIR=/path/to/output docker compose run --rm reverse-tool \
+#     opcode -b radare2 -d /data -o /output
+#
+# Or set defaults in .env file:
+#   INPUT_DIR=/path/to/binaries
+#   OUTPUT_DIR=/path/to/output
+
+services:
+  reverse-tool:
+    image: ghcr.io/bolin8017/reversetool:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: full
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${INPUT_DIR:-.}/:/data:ro
+      - ${OUTPUT_DIR:-./output}/:/output
+    environment:
+      - HOME=/tmp
+
+  reverse-tool-r2:
+    image: ghcr.io/bolin8017/reversetool:radare2
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: radare2-only
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${INPUT_DIR:-.}/:/data:ro
+      - ${OUTPUT_DIR:-./output}/:/output
+
+  reverse-tool-ghidra:
+    image: ghcr.io/bolin8017/reversetool:ghidra
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: ghidra-only
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${INPUT_DIR:-.}/:/data:ro
+      - ${OUTPUT_DIR:-./output}/:/output
+    environment:
+      - HOME=/tmp
