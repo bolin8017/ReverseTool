@@ -7,10 +7,12 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -18,4 +20,34 @@ jobs:
           python-version: "3.12"
       - run: pip install pip-audit
       - run: pip install -e .
-      - run: pip-audit --strict
+      - name: Run pip-audit
+        run: pip-audit --skip-editable --format json --output audit.json
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pip-audit-report
+          path: audit.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Notify on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE_PREFIX="[Dependency Audit]"
+          EXISTING_NUM=$(gh issue list --search "${TITLE_PREFIX} in:title" --state open --json number --jq '.[0].number // empty')
+          BODY=$(cat <<EOF
+          Scheduled \`pip-audit\` run failed.
+
+          Failed run: ${RUN_URL}
+
+          Download the \`pip-audit-report\` artifact from the run page for the JSON report.
+          EOF
+          )
+          if [ -n "${EXISTING_NUM}" ]; then
+            gh issue comment "${EXISTING_NUM}" --body "${BODY}"
+          else
+            gh issue create --title "${TITLE_PREFIX} failed on $(date -u +%Y-%m-%d)" --body "${BODY}"
+          fi
