@@ -18,4 +18,4 @@ jobs:
           python-version: "3.12"
       - run: pip install pip-audit
       - run: pip install -e .
-      - run: pip-audit --strict
+      - run: pip-audit --strict --skip-editable
